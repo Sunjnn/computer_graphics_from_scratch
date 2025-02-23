@@ -14,9 +14,9 @@ def main():
         Sphere(np.array([-2, 0, 4]), 1, COLOR_GREEN),
         Sphere(np.array([0, -5001, 0]), 5000, COLOR_YELLO)
     ], [
-        AmbientLight(0.4),
+        AmbientLight(0.2),
         PointLight(0.6, np.array([2, 1, 0])),
-        DirectionalLight(0.6, np.array([1, 4, 4]))
+        DirectionalLight(0.2, np.array([1, 4, 4]))
     ])
 
     for canvasX, canvasY in canvas.GenerateCoordinates():

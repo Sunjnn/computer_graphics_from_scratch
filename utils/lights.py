@@ -14,8 +14,8 @@ def DiffuseReflection(intensity, vectorLight, normal):
     dotNormalLight = np.dot(normal, vectorLight)
     if dotNormalLight <= 0:
         return 0
-    normNormal = np.dot(normal, normal)
-    normLight = np.dot(vectorLight, vectorLight)
+    normNormal = np.linalg.norm(normal)
+    normLight = np.linalg.norm(vectorLight)
     return intensity * dotNormalLight / normNormal / normLight
 
 
