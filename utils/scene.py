@@ -16,5 +16,5 @@ class Scene:
     def GetBackgroundColor(self):
         return self.m_backgroundColor
 
-    def ComputeLighting(self, point, normal):
-        return ComputeLighting(point, normal, self.m_lights)
+    def ComputeLighting(self, point, normal, vectorView, specular):
+        return ComputeLighting(point, normal, vectorView, specular, self.m_lights)

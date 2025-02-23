@@ -24,4 +24,6 @@ def TraceRay(scene: Scene, cameraPosition, viewpointCoord, t_min, t_max):
 
     intersectPoint = cameraPosition + closestT * vectorView
     intersectNormal = intersectPoint - closestSphere.GetCenter()
-    return closestSphere.GetColor() * scene.ComputeLighting(intersectPoint, intersectNormal)
+    intersectNormal = intersectNormal / np.linalg.norm(intersectNormal)
+
+    return closestSphere.GetColor() * scene.ComputeLighting(intersectPoint, intersectNormal, -vectorView, closestSphere.GetSpecular())

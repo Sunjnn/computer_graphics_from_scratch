@@ -9,10 +9,10 @@ def main():
     canvas = Canvas(600, 600)
 
     scene = Scene(COLOR_BLACK, [
-        Sphere(np.array([0, -1, 3]), 1, COLOR_RED),
-        Sphere(np.array([2, 0, 4]), 1, COLOR_BLUE),
-        Sphere(np.array([-2, 0, 4]), 1, COLOR_GREEN),
-        Sphere(np.array([0, -5001, 0]), 5000, COLOR_YELLO)
+        Sphere(np.array([0, -1, 3]), 1, COLOR_RED, 500),
+        Sphere(np.array([2, 0, 4]), 1, COLOR_BLUE, 500),
+        Sphere(np.array([-2, 0, 4]), 1, COLOR_GREEN, 10),
+        Sphere(np.array([0, -5001, 0]), 5000, COLOR_YELLO, 1000)
     ], [
         AmbientLight(0.2),
         PointLight(0.6, np.array([2, 1, 0])),
