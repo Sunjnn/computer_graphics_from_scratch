@@ -6,7 +6,7 @@ class Canvas:
     def __init__(self, width, height):
         self.m_width = width
         self.m_height = height
-        self.m_canvas = np.zeros([height, width, 3], dtype=np.uint8)
+        self.m_canvas = np.zeros([height, width, 3], np.float64)
 
     def PutPixel(self, canvasX, canvasY, color):
         screenX, screenY = self.CanvasToScreen(canvasX, canvasY)
@@ -30,7 +30,12 @@ class Canvas:
     def GetShape(self):
         return self.m_width, self.m_height
 
+    def normalize_image(self):
+        self.m_canvas[self.m_canvas > 1] = 1
+
     def SaveFigure(self, file_name):
+        self.normalize_image()
+
         plt.imshow(self.m_canvas)
         plt.savefig(file_name)
         plt.show()
