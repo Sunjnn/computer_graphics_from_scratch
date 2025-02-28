@@ -1,12 +1,14 @@
 import numpy as np
 
+from .models import Ray, ClosestIntersection
+from .scene import Scene
 
 
 class Light:
     def __init__(self, intensity):
         self.m_intensity = intensity
 
-    def ComputeLighting(self, point, normal, vectorView, specular):
+    def ComputeLighting(self, scene, point, normal, vectorView, specular):
         return self.m_intensity
 
 
@@ -39,8 +41,14 @@ class PointLight(Light):
         super().__init__(intensity)
         self.m_position = position
 
-    def ComputeLighting(self, point, normal, vectorView, specular):
+    def ComputeLighting(self, scene, point, normal, vectorView, specular):
         vectorLight = self.m_position - point
+
+        t_max = 1
+        shadowSphere, shadowT = ClosestIntersection(scene, Ray(point, vectorLight), 0.001, t_max)
+        if shadowSphere != None:
+            return 0
+
         diffuseIntensity = DiffuseReflection(self.m_intensity, vectorLight, normal)
         specularIntensity = SpecularReflection(self.m_intensity, vectorLight, normal, vectorView, specular)
         return diffuseIntensity + specularIntensity
@@ -51,8 +59,14 @@ class DirectionalLight(Light):
         super().__init__(intensity)
         self.m_direction = direction
 
-    def ComputeLighting(self, point, normal, vectorView, specular):
+    def ComputeLighting(self, scene, point, normal, vectorView, specular):
         vectorLight = self.m_direction
+
+        t_max = np.inf
+        shadowSphere, shadowT = ClosestIntersection(scene, Ray(point, vectorLight), 0.001, t_max)
+        if shadowSphere != None:
+            return 0
+
         diffuseIntensity = DiffuseReflection(self.m_intensity, vectorLight, normal)
         specularIntensity = SpecularReflection(self.m_intensity, vectorLight, normal, vectorView, specular)
         return diffuseIntensity + specularIntensity
@@ -61,8 +75,8 @@ class DirectionalLight(Light):
 AmbientLight = Light
 
 
-def ComputeLighting(point, normal, vectorView, specular, lights: list[Light]):
+def ComputeLighting(scene: Scene, point, normal, vectorView, specular):
     intensity = 0
-    for light in lights:
-        intensity += light.ComputeLighting(point, normal, vectorView, specular)
+    for light in scene.GetLights():
+        intensity += light.ComputeLighting(scene, point, normal, vectorView, specular)
     return intensity

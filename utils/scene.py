@@ -1,7 +1,5 @@
 import numpy as np
 
-from .lights import ComputeLighting
-
 
 class Scene:
     def __init__(self, backgroundColor, spheres=[], lights=[]):
@@ -16,5 +14,6 @@ class Scene:
     def GetBackgroundColor(self):
         return self.m_backgroundColor
 
-    def ComputeLighting(self, point, normal, vectorView, specular):
-        return ComputeLighting(point, normal, vectorView, specular, self.m_lights)
+    def GetLights(self):
+        for light in self.m_lights:
+            yield light

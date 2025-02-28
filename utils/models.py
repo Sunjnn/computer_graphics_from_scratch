@@ -1,5 +1,6 @@
 import numpy as np
 
+from .scene import Scene
 
 class Ray:
     def __init__(self, source, direction):
@@ -59,3 +60,18 @@ def IntersectRaySphere(ray: Ray, sphere: Sphere):
         root1 = (-b + delta_sqrt) / 2 / a
         root2 = (-b - delta_sqrt) / 2 / a
         return "Two root", [root1, root2]
+
+
+def ClosestIntersection(scene: Scene, viewRay: Ray, t_min, t_max):
+    closestT = np.inf
+    closestSphere: Sphere = None
+
+    for sphere in scene.GetSpheres():
+        rootStr, roots = IntersectRaySphere(viewRay, sphere)
+        if rootStr != "No root":
+            for root in roots:
+                if root >= t_min and root < t_max and root < closestT:
+                    closestT = root
+                    closestSphere = sphere
+
+    return closestSphere, closestT

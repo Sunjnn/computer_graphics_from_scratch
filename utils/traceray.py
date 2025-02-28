@@ -1,29 +1,19 @@
 import numpy as np
 
-from .models import Ray, Sphere, IntersectRaySphere
+from .lights import ComputeLighting
+from .models import Ray, ClosestIntersection
 from .scene import Scene
 
 
 def TraceRay(scene: Scene, cameraPosition, viewpointCoord, t_min, t_max):
-    closestT = np.inf
-    closestSphere: Sphere = None
-
     vectorView = viewpointCoord - cameraPosition
     viewRay = Ray(cameraPosition, vectorView)
-
-    for sphere in scene.GetSpheres():
-        rootStr, roots = IntersectRaySphere(viewRay, sphere)
-        if rootStr != "No root":
-            for root in roots:
-                if root >= t_min and root < t_max and root < closestT:
-                    closestT = root
-                    closestSphere = sphere
-
-    if closestT == np.inf:
+    closestSphere, closestT = ClosestIntersection(scene, viewRay, t_min, t_max)
+    if closestSphere == None:
         return scene.GetBackgroundColor()
 
     intersectPoint = cameraPosition + closestT * vectorView
     intersectNormal = intersectPoint - closestSphere.GetCenter()
     intersectNormal = intersectNormal / np.linalg.norm(intersectNormal)
 
-    return closestSphere.GetColor() * scene.ComputeLighting(intersectPoint, intersectNormal, -vectorView, closestSphere.GetSpecular())
+    return closestSphere.GetColor() * ComputeLighting(scene, intersectPoint, intersectNormal, -vectorView, closestSphere.GetSpecular())
