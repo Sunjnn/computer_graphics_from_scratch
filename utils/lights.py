@@ -21,11 +21,16 @@ def DiffuseReflection(intensity, vectorLight, normal):
     return intensity * dotNormalLight / normNormal / normLight
 
 
+def ReflectiveRay(vectorLight, normal):
+    vectorReflectLight = 2 * normal * np.dot(normal, vectorLight) - vectorLight
+    return vectorReflectLight
+
+
 def SpecularReflection(intensity, vectorLight, normal, vectorView, specular):
     if specular == -1:
         return 0
 
-    vectorReflectLight = 2 * normal * np.dot(normal, vectorLight) - vectorLight
+    vectorReflectLight = ReflectiveRay(vectorLight, normal)
     dotReflectView = np.dot(vectorReflectLight, vectorView)
     if dotReflectView <= 0:
         return 0

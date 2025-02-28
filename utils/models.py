@@ -18,11 +18,12 @@ class Ray:
 
 
 class Sphere:
-    def __init__(self, center, radius, color, specular):
+    def __init__(self, center, radius, color, specular, reflective):
         self.m_center = center
         self.m_radius = radius
         self.m_color = color
         self.m_specular = specular
+        self.m_reflective = reflective
 
     def GetCenter(self):
         return self.m_center
@@ -35,6 +36,9 @@ class Sphere:
 
     def GetSpecular(self):
         return self.m_specular
+
+    def GetReflective(self):
+        return self.m_reflective
 
 
 def IntersectRaySphere(ray: Ray, sphere: Sphere):
