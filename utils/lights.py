@@ -1,44 +1,44 @@
 import numpy as np
 
-from .models import Ray, ClosestIntersection
-from .scene import Scene
+from .models import Ray
+from .scene import Scene, ClosestIntersection
 
 
 class Light:
     def __init__(self, intensity):
         self.m_intensity = intensity
 
-    def ComputeLighting(self, scene, point, normal, vectorView, specular):
+    def ComputeLighting(self, scene, points, normals, vectorViews, speculars):
         return self.m_intensity
 
 
-def DiffuseReflection(intensity, vectorLight, normal):
-    dotNormalLight = np.dot(normal, vectorLight)
-    if dotNormalLight <= 0:
-        return 0
-    normNormal = np.linalg.norm(normal)
-    normLight = np.linalg.norm(vectorLight)
-    return intensity * dotNormalLight / normNormal / normLight
+def DiffuseReflection(intensity, vectorLights, normals):
+    dotNormalLights = np.sum(normals * vectorLights, axis=1)
+    intensitys = np.full([vectorLights.shape[0]], intensity)
+    intensitys[dotNormalLights <= 0] = 0
+
+    normNormals = np.linalg.norm(normals, axis=1)
+    normLights = np.linalg.norm(vectorLights, axis=1)
+    return intensitys * dotNormalLights / normNormals / normLights
 
 
-def ReflectiveRay(vectorLight, normal):
-    vectorReflectLight = 2 * normal * np.dot(normal, vectorLight) - vectorLight
-    return vectorReflectLight
+def ReflectiveRay(vectorLights, normals):
+    vectorReflectLights = 2 * normals * np.sum(normals * vectorLights, axis=1, keepdims=True) - vectorLights
+    return vectorReflectLights
 
 
-def SpecularReflection(intensity, vectorLight, normal, vectorView, specular):
-    if specular == -1:
-        return 0
+def SpecularReflection(intensity, vectorLights, normals, vectorViews, speculars):
+    intensity = np.full([vectorLights.shape[0]], intensity)
+    intensity[speculars == -1] = 0
 
-    vectorReflectLight = ReflectiveRay(vectorLight, normal)
-    dotReflectView = np.dot(vectorReflectLight, vectorView)
-    if dotReflectView <= 0:
-        return 0
+    vectorReflectLights = ReflectiveRay(vectorLights, normals)
+    dotReflectViews = np.sum(vectorReflectLights * vectorViews, axis=1)
+    dotReflectViews[dotReflectViews <= 0] = 0
 
-    normReflect = np.linalg.norm(vectorReflectLight)
-    normView = np.linalg.norm(vectorView)
+    normReflects = np.linalg.norm(vectorReflectLights, axis=1)
+    normViews = np.linalg.norm(vectorViews, axis=1)
 
-    return intensity * np.pow(dotReflectView / normReflect / normView, specular)
+    return intensity * np.pow(dotReflectViews / normReflects / normViews, speculars)
 
 
 class PointLight(Light):
@@ -46,17 +46,19 @@ class PointLight(Light):
         super().__init__(intensity)
         self.m_position = position
 
-    def ComputeLighting(self, scene, point, normal, vectorView, specular):
-        vectorLight = self.m_position - point
+    def ComputeLighting(self, scene, points, normals, vectorViews, speculars):
+        vectorLights = self.m_position - points
 
         t_max = 1
-        shadowSphere, shadowT = ClosestIntersection(scene, Ray(point, vectorLight), 0.001, t_max)
-        if shadowSphere != None:
-            return 0
+        shadowSpheres, shadowTs = ClosestIntersection(scene, vectorLights, points, 0.001, t_max)
 
-        diffuseIntensity = DiffuseReflection(self.m_intensity, vectorLight, normal)
-        specularIntensity = SpecularReflection(self.m_intensity, vectorLight, normal, vectorView, specular)
-        return diffuseIntensity + specularIntensity
+        diffuseIntensitys = DiffuseReflection(self.m_intensity, vectorLights, normals)
+        specularIntensitys = SpecularReflection(self.m_intensity, vectorLights, normals, vectorViews, speculars)
+
+        intensitys = diffuseIntensitys + specularIntensitys
+        intensitys[shadowSpheres == -1] = 0
+
+        return intensitys
 
 
 class DirectionalLight(Light):
@@ -64,24 +66,26 @@ class DirectionalLight(Light):
         super().__init__(intensity)
         self.m_direction = direction
 
-    def ComputeLighting(self, scene, point, normal, vectorView, specular):
-        vectorLight = self.m_direction
+    def ComputeLighting(self, scene, points, normals, vectorViews, speculars):
+        vectorLights = np.broadcast_to(self.m_direction, points.shape)
 
         t_max = np.inf
-        shadowSphere, shadowT = ClosestIntersection(scene, Ray(point, vectorLight), 0.001, t_max)
-        if shadowSphere != None:
-            return 0
+        shadowSphere, shadowT = ClosestIntersection(scene, vectorLights, points, 0.001, t_max)
 
-        diffuseIntensity = DiffuseReflection(self.m_intensity, vectorLight, normal)
-        specularIntensity = SpecularReflection(self.m_intensity, vectorLight, normal, vectorView, specular)
-        return diffuseIntensity + specularIntensity
+        diffuseIntensitys = DiffuseReflection(self.m_intensity, vectorLights, normals)
+        specularIntensitys = SpecularReflection(self.m_intensity, vectorLights, normals, vectorViews, speculars)
+
+        intensitys = diffuseIntensitys + specularIntensitys
+        intensitys[shadowSphere == -1] = 0
+
+        return intensitys
 
 
 AmbientLight = Light
 
 
-def ComputeLighting(scene: Scene, point, normal, vectorView, specular):
+def ComputeLighting(scene: Scene, points, normals, vectorViews, speculars):
     intensity = 0
     for light in scene.GetLights():
-        intensity += light.ComputeLighting(scene, point, normal, vectorView, specular)
+        intensity += light.ComputeLighting(scene, points, normals, vectorViews, speculars)
     return intensity

@@ -1,6 +1,5 @@
 import numpy as np
 
-from .scene import Scene
 
 class Ray:
     def __init__(self, source, direction):
@@ -41,41 +40,26 @@ class Sphere:
         return self.m_reflective
 
 
-def IntersectRaySphere(ray: Ray, sphere: Sphere):
-    rayDirection = ray.GetDirection()
-    a = np.dot(rayDirection, rayDirection)
+def IntersectRaySphere(rayDirections, raySources, sphere: Sphere):
+    As = np.sum(rayDirections * rayDirections, axis=1)
 
-    raySource = ray.GetSource()
     sphereCenter = sphere.GetCenter()
-    vectorCO = raySource - sphereCenter
-    b = 2 * np.dot(vectorCO, rayDirection)
+    vectorCOs = raySources - sphereCenter
+    Bs = 2 * np.sum(vectorCOs * rayDirections, axis=1)
 
     sphereRadius = sphere.GetRadius()
-    c = np.dot(vectorCO, vectorCO) - sphereRadius * sphereRadius
+    Cs = np.sum(vectorCOs * vectorCOs) - sphereRadius * sphereRadius
 
-    delta = b * b - 4 * a * c
-    if delta < 0:
-        return "No root", []
-    elif delta == 0:
-        root = -b / 2 / a
-        return "One root", [root]
-    else:
-        delta_sqrt = np.sqrt(delta)
-        root1 = (-b + delta_sqrt) / 2 / a
-        root2 = (-b - delta_sqrt) / 2 / a
-        return "Two root", [root1, root2]
+    deltas = Bs * Bs - 4 * As * Cs
+    rootNums = np.zeros(deltas.shape, dtype=np.int32)
+    rootNums[deltas == 0] = 1
+    rootNums[deltas > 0]  = 2
 
+    deltas[deltas < 0] = 0.0
+    twiceAs = 2 * As
+    sqrtDeltas = np.sqrt(deltas)
+    root1 = (-Bs - sqrtDeltas) / twiceAs
+    root2 = (-Bs + sqrtDeltas) / twiceAs
+    root1[root2 < root1] = root2[root2 < root1]
 
-def ClosestIntersection(scene: Scene, viewRay: Ray, t_min, t_max):
-    closestT = np.inf
-    closestSphere: Sphere = None
-
-    for sphere in scene.GetSpheres():
-        rootStr, roots = IntersectRaySphere(viewRay, sphere)
-        if rootStr != "No root":
-            for root in roots:
-                if root >= t_min and root < t_max and root < closestT:
-                    closestT = root
-                    closestSphere = sphere
-
-    return closestSphere, closestT
+    return rootNums, root1

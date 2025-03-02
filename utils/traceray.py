@@ -1,27 +1,29 @@
 import numpy as np
 
 from .lights import ComputeLighting, ReflectiveRay
-from .models import Ray, ClosestIntersection
-from .scene import Scene
+from .scene import Scene, ClosestIntersection
 
 
-def TraceRay(scene: Scene, cameraPosition, vectorView, t_min, t_max, recursionDepth):
-    viewRay = Ray(cameraPosition, vectorView)
-    closestSphere, closestT = ClosestIntersection(scene, viewRay, t_min, t_max)
-    if closestSphere == None:
-        return scene.GetBackgroundColor()
+def TraceRay(scene: Scene, colorShape, cameraPosition, vectorViews, t_min, t_max, recursionDepth):
+    closestSpheres, closestTs = ClosestIntersection(scene, vectorViews, cameraPosition, t_min, t_max)
+    closestTs = closestTs.reshape(-1, 1)
 
-    intersectPoint = cameraPosition + closestT * vectorView
-    intersectNormal = intersectPoint - closestSphere.GetCenter()
-    intersectNormal = intersectNormal / np.linalg.norm(intersectNormal)
+    intersectPoints = cameraPosition + closestTs * vectorViews
+    intersectNormals = intersectPoints - scene.GetSphereCenters(closestSpheres)
+    intersectNormals = intersectNormals / np.linalg.norm(intersectNormals, axis=1, keepdims=True)
 
-    localColor = closestSphere.GetColor() * ComputeLighting(scene, intersectPoint, intersectNormal, -vectorView, closestSphere.GetSpecular())
+    sphereColors = scene.GetColors(closestSpheres)
+    sphereColors[closestSpheres == -1] = scene.GetBackgroundColor()
 
-    reflective = closestSphere.GetReflective()
-    if recursionDepth <= 0 or reflective <= 0:
-        return localColor
+    localColors = sphereColors * ComputeLighting(scene, intersectPoints, intersectNormals, -vectorViews, scene.GetSpeculars(closestSpheres)).reshape(-1, 1)
 
-    vectorReflective = ReflectiveRay(-vectorView, intersectNormal)
-    reflectiveColor = TraceRay(scene, intersectPoint, vectorReflective, 0.001, np.inf, recursionDepth - 1)
+    if recursionDepth <= 0:
+        return localColors
 
-    return localColor * (1 - reflective) + reflectiveColor * reflective
+    reflectives = scene.GetReflectives(closestSpheres)
+    reflectives[reflectives <= 0] = 0
+
+    vectorReflectives = ReflectiveRay(-vectorViews, intersectNormals)
+    reflectiveColors = TraceRay(scene, colorShape, intersectPoints, vectorReflectives, 0.001, np.inf, recursionDepth - 1)
+
+    return localColors * (1 - reflectives).reshape(-1, 1) + reflectiveColors * reflectives.reshape(-1, 1)

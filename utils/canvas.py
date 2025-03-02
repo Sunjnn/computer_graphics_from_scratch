@@ -6,7 +6,7 @@ class Canvas:
     def __init__(self, width, height):
         self.m_width = width
         self.m_height = height
-        self.m_canvas = np.zeros([height, width, 3], np.float64)
+        self.m_canvas = None
 
     def PutPixel(self, canvasX, canvasY, color):
         screenX, screenY = self.CanvasToScreen(canvasX, canvasY)
@@ -17,15 +17,20 @@ class Canvas:
         screenY = self.m_height / 2 - canvasY
         return int(screenX), int(screenY)
 
-    def ScreenToCanvas(self, screenX, screenY):
-        canvasX = screenX - self.m_width / 2
-        canvasY = self.m_height / 2 - screenY
-        return int(canvasX), int(canvasY)
+    def ScreenToCanvas(self, coordinates):
+        transMatrix = np.array([
+            [1,                 0,                  0],
+            [0,                 -1,                 0],
+            [-self.m_width / 2, self.m_height / 2,  1]
+        ], dtype=coordinates.dtype)
+        return np.matmul(coordinates, transMatrix)
 
     def GenerateCoordinates(self):
-        for x in range(self.m_width):
-            for y in range(self.m_height):
-                yield self.ScreenToCanvas(x, y)
+        rowIdx, colIdx = np.indices([self.m_height, self.m_width])
+        coordinates = np.stack((rowIdx, colIdx), axis=-1)
+        coordinates = coordinates.reshape(-1, 2)
+        homogeneous_coordinates = np.hstack((coordinates, np.ones((coordinates.shape[0], 1), dtype=coordinates.dtype)))
+        return self.ScreenToCanvas(homogeneous_coordinates)
 
     def GetShape(self):
         return self.m_width, self.m_height
@@ -33,7 +38,8 @@ class Canvas:
     def normalize_image(self):
         self.m_canvas[self.m_canvas > 1] = 1
 
-    def SaveFigure(self, file_name):
+    def SaveFigure(self, colors, file_name):
+        self.m_canvas = colors.reshape((self.m_height, self.m_width, 3), order='F')
         self.normalize_image()
 
         plt.imshow(self.m_canvas)

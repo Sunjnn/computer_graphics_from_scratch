@@ -4,7 +4,7 @@ from .canvas import Canvas
 
 
 class Camera:
-    def __init__(self, position=np.zeros(3)):
+    def __init__(self, position=np.array([0, 0, 0, 1.0])):
         self.m_position = position
 
     def GetPosition(self):
@@ -24,11 +24,12 @@ class Viewpoint:
         return self.m_distance
 
 
-def CanvasToViewpoint(canvas: Canvas, viewpoint: Viewpoint, canvasX, canvasY):
+def CanvasToViewpoint(canvas: Canvas, viewpoint: Viewpoint, canvasCoordinates):
     viewpointWidth, viewpointHeight = viewpoint.GetShape()
     canvasWidth, canvasHeight = canvas.GetShape()
-
-    viewpointX = canvasX * viewpointWidth / canvasWidth
-    viewpointY = canvasY * viewpointHeight / canvasHeight
-    viewpointZ = viewpoint.GetDistance()
-    return np.array([viewpointX, viewpointY, viewpointZ])
+    projectMatrix = np.array([
+        [viewpointWidth / canvasWidth, 0, 0, 0],
+        [0, viewpointHeight / canvasHeight, 0, 0],
+        [0, 0, viewpoint.GetDistance(), 1]
+    ])
+    return np.matmul(canvasCoordinates, projectMatrix)
